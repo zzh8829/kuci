@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/zzh8829/kuci/pkg/kuci"
 )
 
@@ -13,7 +15,7 @@ var rootCmd = &cobra.Command{
 	Short: "kubernetes ci",
 	Run: func(cmd *cobra.Command, args []string) {
 		c := kuci.NewController()
-		c.start()
+		c.Start()
 	},
 }
 
@@ -24,3 +26,4 @@ func Execute() {
 		os.Exit(1)
 	}
 }
+
