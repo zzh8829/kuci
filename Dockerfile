@@ -1,6 +1,6 @@
 FROM golang:1.12
 
-RUN apt update && apt install -yqq \
+RUN apt update && apt install -yqq --no-install-recommends \
     apt-transport-https \
     ca-certificates \
     curl \
