@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuci
+  labels:
+    app: kuci
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: kuci
+  template:
+    metadata:
+      labels:
+        app: kuci
+    spec:
+      containers:
+      - name: kuci
+        image: zihao/play-kuci:latest
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: 10m
+            memory: 10Mi

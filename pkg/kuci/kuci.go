@@ -45,15 +45,17 @@ func (c *Controller) Start() {
 			return ""
 		}
 		imageTag := os.Expand(tagString, mapper)
-		if !dockerImageExists(imageTag) {
-			log.Infof("Image %v no exist\n", imageTag)
-			err := doCI(gitURL, imageTag)
-			if err != nil {
-				log.Errorf("%v", err)
-			}
+
+		err = doCI(gitURL, imageTag)
+		if err != nil {
+			log.Errorf("%v", err)
 		}
-		return
-		time.Sleep(10 * time.Second)
+
+		err = doCD(imageTag)
+		if err != nil {
+			log.Errorf("%v", err)
+		}
+		time.Sleep(60 * time.Second)
 	}
 }
 
@@ -105,12 +107,18 @@ func shellCommand(command string) (string, error) {
 }
 
 func doCI(gitURL string, imageTag string) error {
+	log.Infof("Building Image %v ", imageTag)
+	if dockerImageExists(imageTag) {
+		log.Printf("Image exists")
+		return nil
+	}
+
 	dir, err := ioutil.TempDir("", "kuci")
 	if err != nil {
 		return err
 	}
 	log.Printf(dir)
-	// defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir)
 	gitDir := path.Join(dir, "repo")
 
 	_, err = shellCommand(fmt.Sprintf("git clone %v %v", gitURL, gitDir))
@@ -130,7 +138,23 @@ func doCI(gitURL string, imageTag string) error {
 		return err
 	}
 
-	_, err = shellCommand(fmt.Sprintf("kubectl set image deployment kuci %v", imageTag))
+	return nil
+}
+
+func doCD(imageTag string) error {
+	tmpfile, err := ioutil.TempFile("", "kuci.*.yaml")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpfile.Name())
+	log.Printf(tmpfile.Name())
+
+	_, err = shellCommand(fmt.Sprintf("sed 's@image: .*@image: %v@g' kubernetes.yaml > %v", imageTag, tmpfile.Name()))
+	if err != nil {
+		return err
+	}
+
+	_, err = shellCommand(fmt.Sprintf("kubectl apply -f %v", tmpfile.Name()))
 	if err != nil {
 		return err
 	}
