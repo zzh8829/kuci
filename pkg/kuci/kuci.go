@@ -53,10 +53,6 @@ func (c *Controller) Start() {
 			log.Errorf("%v", err)
 		}
 
-		err = doCD(imageTag)
-		if err != nil {
-			log.Errorf("%v", err)
-		}
 		time.Sleep(60 * time.Second)
 	}
 }
@@ -115,13 +111,13 @@ func doCI(gitURL string, imageTag string) error {
 		return nil
 	}
 
-	dir, err := ioutil.TempDir("", "kuci")
+	tempdir, err := ioutil.TempDir("", "kuci")
 	if err != nil {
 		return err
 	}
-	log.Printf(dir)
-	defer os.RemoveAll(dir)
-	gitDir := path.Join(dir, "repo")
+	log.Printf(tempdir)
+	defer os.RemoveAll(tempdir)
+	gitDir := path.Join(tempdir, "repo")
 
 	_, err = shellCommand(fmt.Sprintf("git clone %v %v", gitURL, gitDir))
 	if err != nil {
@@ -140,23 +136,14 @@ func doCI(gitURL string, imageTag string) error {
 		return err
 	}
 
-	return nil
-}
+	conf := path.Join(tempdir, "kubernetes.yaml")
 
-func doCD(imageTag string) error {
-	tmpfile, err := ioutil.TempFile("", "kuci.*.yaml")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(tmpfile.Name())
-	log.Printf(tmpfile.Name())
-
-	_, err = shellCommand(fmt.Sprintf("sed 's@image: .*@image: %v@g' kubernetes.yaml > %v", imageTag, tmpfile.Name()))
+	_, err = shellCommand(fmt.Sprintf("sed 's@image: .*@image: %v@g' kubernetes.yaml > %v", imageTag, conf))
 	if err != nil {
 		return err
 	}
 
-	_, err = shellCommand(fmt.Sprintf("kubectl apply -f %v", tmpfile.Name()))
+	_, err = shellCommand(fmt.Sprintf("kubectl apply -f %v", conf))
 	if err != nil {
 		return err
 	}
