@@ -94,7 +94,7 @@ func doCI(gitURL string, imageTag string) error {
 		return err
 	}
 
-	out, err = exec.Command("sh", "-c", fmt.Sprintf("kubectl set image deployment kuci %v", imageTag)).Output()
+	out, err = exec.Command("sh", "-c", fmt.Sprintf("kubectl set image deployment kuci %v", imageTag)).CombinedOutput()
 	log.Printf(string(out))
 	if err != nil {
 		return err
