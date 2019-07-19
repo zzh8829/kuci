@@ -28,9 +28,10 @@ func NewController() *Controller {
 }
 
 func (c *Controller) Start() {
-	shellCommand("ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts")
+	shellCommand("mkdir -p ~/.ssh && ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts")
+	shellCommand(os.ExpandEnv("docker login -u='${DOCKER_USERNAME}' -p='${DOCKER_PASSWORD}'"))
 	for {
-		gitURL := "git@github.com:zzh8829/kuci.git"
+		gitURL := "https://github.com/zzh8829/kuci.git"
 		tagString := "zihao/play:kuci-${GIT_SHA_SHORT}"
 
 		sha, err := shellCommand(fmt.Sprintf("git ls-remote %v HEAD | head -c7", gitURL))
