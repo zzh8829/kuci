@@ -1,7 +1,9 @@
 package kuci
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -30,7 +32,7 @@ func (c *Controller) Start() {
 		gitURL := "git@github.com:zzh8829/kuci.git"
 		tagString := "zihao/play:kuci-${GIT_SHA_SHORT}"
 
-		sha, err := exec.Command("sh", "-c", fmt.Sprintf("git ls-remote %v HEAD | head -c7", gitURL)).Output()
+		sha, err := shellCommand(fmt.Sprintf("git ls-remote %v HEAD | head -c7", gitURL))
 		if err != nil {
 			log.Printf("%v", err)
 			log.Fatal("Rip")
@@ -65,6 +67,43 @@ func dockerImageExists(tag string) bool {
 	return false
 }
 
+func shellCommand(command string) (string, error) {
+	cmd := exec.Command("sh", "-c", command)
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", err
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return "", err
+	}
+
+	if err := cmd.Start(); err != nil {
+		return "", err
+	}
+
+	reader := io.MultiReader(stdout, stderr)
+	in := bufio.NewScanner(reader)
+
+	outputs := ""
+	for in.Scan() {
+		outputs += in.Text()
+		log.Printf(in.Text())
+	}
+
+	if err := in.Err(); err != nil {
+		return "", err
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return "", err
+	}
+
+	return outputs, nil
+}
+
 func doCI(gitURL string, imageTag string) error {
 	dir, err := ioutil.TempDir("", "kuci")
 	if err != nil {
@@ -74,28 +113,24 @@ func doCI(gitURL string, imageTag string) error {
 	// defer os.RemoveAll(dir)
 	gitDir := path.Join(dir, "repo")
 
-	out, err := exec.Command("sh", "-c", fmt.Sprintf("git clone %v %v", gitURL, gitDir)).CombinedOutput()
-	log.Printf(string(out))
+	_, err = shellCommand(fmt.Sprintf("git clone %v %v", gitURL, gitDir))
 	if err != nil {
 		return err
 	}
 
 	os.Chdir(gitURL)
 
-	out, err = exec.Command("sh", "-c", fmt.Sprintf("docker build -t %v .", imageTag)).CombinedOutput()
-	log.Printf(string(out))
+	_, err = shellCommand(fmt.Sprintf("docker build -t %v .", imageTag))
 	if err != nil {
 		return err
 	}
 
-	out, err = exec.Command("sh", "-c", fmt.Sprintf("docker push %v", imageTag)).CombinedOutput()
-	log.Printf(string(out))
+	_, err = shellCommand(fmt.Sprintf("docker push %v", imageTag))
 	if err != nil {
 		return err
 	}
 
-	out, err = exec.Command("sh", "-c", fmt.Sprintf("kubectl set image deployment kuci %v", imageTag)).CombinedOutput()
-	log.Printf(string(out))
+	_, err = shellCommand(fmt.Sprintf("kubectl set image deployment kuci %v", imageTag))
 	if err != nil {
 		return err
 	}
