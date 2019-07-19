@@ -20,11 +20,16 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kuci
+  labels:
+    app: kuci
 spec:
   replicas: 1
   revisionHistoryLimit: 1
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: kuci
   template:
     metadata:
       labels:
@@ -42,7 +47,7 @@ spec:
         volumeMounts:
           - mountPath: /var/run/docker.sock
             name: docker-sock
-    volumes:
-      - name: docker-sock
-        hostPath:
-          path: /var/run/docker.sock
+      volumes:
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
