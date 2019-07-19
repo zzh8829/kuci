@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	// "github.com/spf13/viper"
 	"github.com/zzh8829/kuci/pkg/kuci"
 )
 
@@ -26,4 +25,3 @@ func Execute() {
 		os.Exit(1)
 	}
 }
-
