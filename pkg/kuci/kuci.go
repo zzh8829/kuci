@@ -28,6 +28,7 @@ func NewController() *Controller {
 }
 
 func (c *Controller) Start() {
+	shellCommand("ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts")
 	for {
 		gitURL := "git@github.com:zzh8829/kuci.git"
 		tagString := "zihao/play:kuci-${GIT_SHA_SHORT}"
